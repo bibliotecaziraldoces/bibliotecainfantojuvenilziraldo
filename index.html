@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca Ziraldo - Gestão e Edição</title>
+    <style>
+        :root {
+            --primary: #02653f;
+            --success: #28a745;
+            --bg: #f4f7f6;
+            --danger: #d9534f;
+            --secondary: #6c757d;
+            --warning: #ffc107;
+        }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; background-color: var(--bg); color: #333; }
+        
+        header { 
+            background: var(--primary); color: white; padding: 15px; 
+            border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .logo-ces { width: 60px; height: auto; }
+        .header-titles { flex: 1; text-align: center; margin-right: 60px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        .card-full { grid-column: 1 / -1; }
+
+        h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 8px; margin-top: 0; font-size: 1.1rem; }
+        .form-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 100px; }
+        
+        label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 3px; color: #666; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+
+        button { padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; transition: 0.2s; }
+        .btn-add { background: var(--success); color: white; width: 100%; margin-bottom: 5px; }
+        .btn-report { background: var(--secondary); color: white; flex: 1; }
+        .btn-del { background: var(--danger); padding: 3px 6px; color: white; border-radius: 3px; }
+        .btn-edit { background: var(--warning); padding: 3px 6px; color: #333; border-radius: 3px; margin-right: 3px; }
+
+        details { border: 1px solid #eee; border-radius: 4px; margin-top: auto; background: #fafafa; }
+        summary { cursor: pointer; padding: 8px; font-size: 11px; font-weight: bold; color: var(--primary); outline: none; }
+        
+        .list-container { max-height: 200px; overflow-y: auto; padding: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; background: white; }
+        th, td { border: 1px solid #eee; padding: 6px; text-align: left; }
+        th { background: #f4f4f4; position: sticky; top: 0; }
+
+        .status-badge { padding: 2px 6px; border-radius: 10px; font-size: 9px; font-weight: bold; }
+        .status-pendente { background: #fff3cd; color: #856404; }
+        .status-devolvido { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="Logomarca CES.png" alt="Logo CES" class="logo-ces">
+    <div class="header-titles">
+        <h1 style="margin:0; font-size: 1.3rem;">Biblioteca Infanto Juvenil Ziraldo</h1>
+        <p style="margin:2px 0 0; font-size: 0.8rem;">CES - Cooperativa Educacional Sarom</p>
+    </div>
+</header>
+
+<div class="grid">
+    <!-- LIVROS -->
+    <div class="card">
+        <h2>📚 Livros e Estoque</h2>
+        <div class="form-row">
+            <input type="hidden" id="editLivroIndex" value="-1">
+            <div class="form-group"><label>Título</label><input type="text" id="livroTitulo"></div>
+            <div class="form-group"><label>Autor</label><input type="text" id="livroAutor"></div>
+            <div class="form-group" style="flex:0.4;"><label>Qtd Total</label><input type="number" id="livroQtd" min="0" value="1"></div>
+        </div>
+        <button id="btnLivroSalvar" class="btn-add" onclick="addLivro()">+ Cadastrar Livro</button>
+        <button id="btnLivroCancelar" class="btn-del" style="display:none; margin-top: -5px; margin-bottom: 5px;" onclick="resetFormLivro()">Cancelar Edição</button>
+        
+        <details>
+            <summary>🔍 Ver Acervo / Editar Quantidades</summary>
+            <div class="list-container">
+                <table id="tabLivros">
+                    <thead><tr><th>Título / Autor</th><th>Disp.</th><th>Ação</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+
+    <!-- ALUNOS -->
+    <div class="card">
+        <h2>🎓 Alunos</h2>
+        <div class="form-row">
+            <div class="form-group"><label>Nome</label><input type="text" id="alunoNome"></div>
+            <div class="form-group"><label>Série</label><input type="text" id="alunoSerie"></div>
+        </div>
+        <button class="btn-add" onclick="addAluno()">+ Cadastrar Aluno</button>
+        <details>
+            <summary>🔍 Lista de Alunos / Histórico</summary>
+            <div class="list-container">
+                <table id="tabAlunos">
+                    <thead><tr><th>Nome / Série</th><th>Ação</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+
+    <!-- BIBLIOTECÁRIOS -->
+    <div class="card">
+        <h2>👤 Bibliotecários</h2>
+        <div class="form-row">
+            <div class="form-group"><label>Nome do Responsável</label><input type="text" id="bibNome"></div>
+        </div>
+        <button class="btn-add" onclick="addBibliotecario()">+ Cadastrar Bibliotecário</button>
+        <details>
+            <summary>🔍 Ver Bibliotecários</summary>
+            <div class="list-container">
+                <table id="tabBibs">
+                    <thead><tr><th>Nome</th><th>Ação</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+
+    <!-- EMPRÉSTIMOS -->
+    <div class="card card-full">
+        <h2>🔄 Registrar Novo Empréstimo</h2>
+        <div class="form-row">
+            <div class="form-group"><label>Bibliotecário</label><select id="selBib"></select></div>
+            <div class="form-group"><label>Aluno</label><select id="selAluno"></select></div>
+            <div class="form-group"><label>Livro</label><select id="selLivro"></select></div>
+            <div class="form-group"><label>Saída</label><input type="date" id="dataSaida"></div>
+            <div class="form-group"><label>Previsão</label><input type="date" id="dataPrevista"></div>
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+            <button class="btn-add" style="flex:2;" onclick="addEmprestimo()">Salvar Empréstimo</button>
+            <button class="btn-report" onclick="gerarRelatorioGeral()">🖨️ Relatório Geral</button>
+        </div>
+
+        <details style="margin-top:15px; border: 2px solid var(--primary);">
+            <summary style="background: var(--primary); color:white; text-align:center; padding:10px;">▼ CONTROLE DE BAIXAS E PENDÊNCIAS ▼</summary>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table id="tabEmprestimos">
+                    <thead>
+                        <tr><th>Aluno</th><th>Livro</th><th>Saída</th><th>Prev.</th><th>Status</th><th>Ação</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+</div>
+
+<script>
+    let livros = JSON.parse(localStorage.getItem('lib_livros')) || [];
+    let alunos = JSON.parse(localStorage.getItem('lib_alunos')) || [];
+    let bibs = JSON.parse(localStorage.getItem('lib_bibs')) || [];
+    let emprestimos = JSON.parse(localStorage.getItem('lib_emprestimos')) || [];
+
+    function saveData() {
+        localStorage.setItem('lib_livros', JSON.stringify(livros));
+        localStorage.setItem('lib_alunos', JSON.stringify(alunos));
+        localStorage.setItem('lib_bibs', JSON.stringify(bibs));
+        localStorage.setItem('lib_emprestimos', JSON.stringify(emprestimos));
+    }
+
+    // --- FUNÇÕES DE LIVROS (CADASTRO E EDIÇÃO) ---
+    function addLivro() {
+        const t = document.getElementById('livroTitulo').value.trim();
+        const a = document.getElementById('livroAutor').value.trim();
+        const q = parseInt(document.getElementById('livroQtd').value);
+        const editIdx = parseInt(document.getElementById('editLivroIndex').value);
+
+        if(!t || !a || isNaN(q)) { alert("Preencha os dados do livro corretamente!"); return; }
+
+        if(editIdx === -1) {
+            // Novo Cadastro
+            livros.push({t, a, qtd: q}); 
+        } else {
+            // Atualizar Existente
+            livros[editIdx] = {t, a, qtd: q};
+            resetFormLivro();
+        }
+
+        saveData(); render(); 
+        document.getElementById('livroTitulo').value=''; 
+        document.getElementById('livroAutor').value='';
+        document.getElementById('livroQtd').value='1';
+    }
+
+    function prepararEdicaoLivro(i) {
+        const l = livros[i];
+        document.getElementById('livroTitulo').value = l.t;
+        document.getElementById('livroAutor').value = l.a;
+        document.getElementById('livroQtd').value = l.qtd;
+        document.getElementById('editLivroIndex').value = i;
+        
+        document.getElementById('btnLivroSalvar').innerText = "Confirmar Alterações";
+        document.getElementById('btnLivroSalvar').style.background = "var(--warning)";
+        document.getElementById('btnLivroSalvar').style.color = "#333";
+        document.getElementById('btnLivroCancelar').style.display = "block";
+    }
+
+    function resetFormLivro() {
+        document.getElementById('editLivroIndex').value = "-1";
+        document.getElementById('livroTitulo').value = '';
+        document.getElementById('livroAutor').value = '';
+        document.getElementById('livroQtd').value = '1';
+        document.getElementById('btnLivroSalvar').innerText = "+ Cadastrar Livro";
+        document.getElementById('btnLivroSalvar').style.background = "var(--success)";
+        document.getElementById('btnLivroSalvar').style.color = "white";
+        document.getElementById('btnLivroCancelar').style.display = "none";
+    }
+
+    // --- DEMAIS FUNÇÕES ---
+    function addAluno() {
+        const n = document.getElementById('alunoNome').value.trim();
+        const s = document.getElementById('alunoSerie').value.trim();
+        if(n && s) { alunos.push({n, s}); saveData(); render(); document.getElementById('alunoNome').value=''; }
+    }
+
+    function addBibliotecario() {
+        const n = document.getElementById('bibNome').value.trim();
+        if(n) { bibs.push({n}); saveData(); render(); document.getElementById('bibNome').value=''; }
+    }
+
+    function addEmprestimo() {
+        const bIdx = document.getElementById('selBib').value;
+        const aIdx = document.getElementById('selAluno').value;
+        const lIdx = document.getElementById('selLivro').value;
+        const ds = document.getElementById('dataSaida').value;
+        const dp = document.getElementById('dataPrevista').value;
+
+        if(bIdx === "" || aIdx === "" || lIdx === "" || !ds || !dp) {
+            alert("Preencha todos os campos obrigatórios!"); return;
+        }
+
+        if(livros[lIdx].qtd <= 0) { alert("Estoque esgotado para este livro!"); return; }
+
+        livros[lIdx].qtd -= 1; 
+        emprestimos.push({
+            bib: bibs[bIdx].n, aluno: alunos[aIdx].n, serie: alunos[aIdx].s,
+            livro: livros[lIdx].t, saida: ds.split('-').reverse().join('/'),
+            prevista: dp.split('-').reverse().join('/'), devolvido: false
+        });
+
+        saveData(); render();
+        alert("Empréstimo registrado!");
+    }
+
+    function darBaixa(idx) {
+        if(confirm("Confirmar devolução do livro?")) {
+            const emp = emprestimos[idx];
+            emp.devolvido = true;
+            const livroNoAcervo = livros.find(l => l.t === emp.livro);
+            if(livroNoAcervo) livroNoAcervo.qtd += 1;
+            saveData(); render();
+        }
+    }
+
+    function render() {
+        // Tabela Livros com botão Editar
+        document.querySelector('#tabLivros tbody').innerHTML = livros.map((l, i) => `
+            <tr>
+                <td><b>${l.t}</b><br>${l.a}</td>
+                <td style="text-align:center">${l.qtd}</td>
+                <td style="white-space:nowrap">
+                    <button class="btn-edit" onclick="prepararEdicaoLivro(${i})">📝</button>
+                    <button class="btn-del" onclick="if(confirm('Excluir livro?')) {livros.splice(${i},1);saveData();render();}">🗑️</button>
+                </td>
+            </tr>`).join('');
+
+        document.querySelector('#tabAlunos tbody').innerHTML = alunos.map((a, i) => `<tr><td><b>${a.n}</b><br>${a.s}</td><td><button class="btn-edit" onclick="relatorioPorAluno('${a.n}')">📄 Histórico</button><button class="btn-del" onclick="alunos.splice(${i},1);saveData();render()">🗑️</button></td></tr>`).join('');
+        document.querySelector('#tabBibs tbody').innerHTML = bibs.map((b, i) => `<tr><td>${b.n}</td><td><button class="btn-del" onclick="bibs.splice(${i},1);saveData();render()">🗑️</button></td></tr>`).join('');
+        
+        document.getElementById('selBib').innerHTML = '<option value="">Selecionar...</option>' + bibs.map((b, i) => `<option value="${i}">${b.n}</option>`).join('');
+        document.getElementById('selAluno').innerHTML = '<option value="">Selecionar...</option>' + alunos.map((a, i) => `<option value="${i}">${a.n}</option>`).join('');
+        document.getElementById('selLivro').innerHTML = '<option value="">Selecionar...</option>' + livros.map((l, i) => `<option value="${i}">${l.t} (Disp: ${l.qtd})</option>`).join('');
+
+        document.querySelector('#tabEmprestimos tbody').innerHTML = emprestimos.map((e, i) => `
+            <tr>
+                <td>${e.aluno}</td><td>${e.livro}</td><td>${e.saida}</td><td>${e.prevista}</td>
+                <td><span class="status-badge ${e.devolvido ? 'status-devolvido' : 'status-pendente'}">${e.devolvido ? 'Devolvido' : 'Pendente'}</span></td>
+                <td>${!e.devolvido ? `<button onclick="darBaixa(${i})">Baixa</button>` : '✅'} <button class="btn-del" onclick="emprestimos.splice(${i},1);saveData();render()">X</button></td>
+            </tr>`).join('');
+    }
+
+    function gerarRelatorioGeral() {
+        const win = window.open('', '', 'height=700,width=900');
+        let html = emprestimos.map(e => `<tr><td>${e.aluno}</td><td>${e.livro}</td><td>${e.saida}</td><td>${e.prevista}</td><td>${e.devolvido?'OK':'PENDENTE'}</td></tr>`).join('');
+        win.document.write(`<html><head><style>table{width:100%;border-collapse:collapse;font-family:sans-serif;} th,td{border:1px solid #333;padding:5px;}</style></head><body><h2>Relatório Geral - Biblioteca Ziraldo</h2><table><thead><tr><th>Aluno</th><th>Livro</th><th>Saída</th><th>Prev.</th><th>Status</th></tr></thead><tbody>${html}</tbody></table></body></html>`);
+        win.document.close(); win.print();
+    }
+
+    function relatorioPorAluno(nomeAluno) {
+        const historico = emprestimos.filter(e => e.aluno === nomeAluno);
+        if(historico.length === 0) { alert("Nenhum registro para este aluno."); return; }
+        const win = window.open('', '', 'height=700,width=900');
+        let html = historico.map(e => `<tr><td>${e.livro}</td><td>${e.saida}</td><td>${e.prevista}</td><td>${e.devolvido?'DEVOLVIDO':'PENDENTE'}</td></tr>`).join('');
+        win.document.write(`<html><head><style>table{width:100%;border-collapse:collapse;font-family:sans-serif;} th,td{border:1px solid #333;padding:8px;}</style></head><body><h2>Histórico de: ${nomeAluno}</h2><table><thead><tr><th>Livro</th><th>Saída</th><th>Previsão</th><th>Status</th></tr></thead><tbody>${html}</tbody></table></body></html>`);
+        win.document.close(); win.print();
+    }
+
+    window.onload = () => { 
+        document.getElementById('dataSaida').value = new Date().toISOString().split('T')[0];
+        render(); 
+    };
+</script>
+</body>
+</html>
